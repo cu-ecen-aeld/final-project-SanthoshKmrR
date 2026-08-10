@@ -1,8 +1,8 @@
 [Unit]
-Description=Camera GUI (EGT) Application -- Sprint 1
-# Start after egtdemo has settled, so the starter script can reliably detect
-# and stop egtdemo before taking over the display.
-After=egtdemo.service
+Description=Camera GUI (EGT + UDP sensor) Application -- Sprint 2
+# Start after the network is up and after egtdemo has settled, so the starter
+# script can bring up eth0 (for UDP :5001) and stop egtdemo before launch.
+After=network.target egtdemo.service
 ConditionPathExists=/dev/dri/card0
 
 [Service]

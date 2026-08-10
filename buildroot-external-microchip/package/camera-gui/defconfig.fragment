@@ -1,10 +1,10 @@
-# camera-gui (Sprint 1) — defconfig fragment
+# camera-gui (Sprint 2) — defconfig fragment
 #
-# Append this line to your board defconfig to build and install the Sprint 1
+# Append this line to your board defconfig to build and install the Sprint 2
 # camera-gui application (/usr/bin/AESDLinuxEgtProject) into the target image.
 #
-# Via Config.in this selects EGT. No GStreamer options are needed in Sprint 1.
-#
-# (Ensure your toolchain provides C++ / gcc >= 9 / wchar, which EGT requires.)
+# Via Config.in this selects EGT. The UDP :5001 sensor listener uses the C
+# library / pthreads only, so no extra Buildroot packages are required. Ensure
+# your toolchain has thread support (BR2_TOOLCHAIN_HAS_THREADS) and gcc >= 9.
 
 BR2_PACKAGE_CAMERA_GUI=y

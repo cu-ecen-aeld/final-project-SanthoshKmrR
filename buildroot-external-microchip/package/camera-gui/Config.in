@@ -1,19 +1,22 @@
 config BR2_PACKAGE_CAMERA_GUI
-	bool "camera-gui (AESDLinuxEgtProject) -- Sprint 1: hello + button"
+	bool "camera-gui (AESDLinuxEgtProject) -- Sprint 2: + UDP :5001 sensor"
 	select BR2_PACKAGE_EGT
 	depends on BR2_INSTALL_LIBSTDCPP
 	depends on BR2_USE_WCHAR
 	depends on BR2_TOOLCHAIN_GCC_AT_LEAST_9 # egt: c++17
+	depends on BR2_TOOLCHAIN_HAS_THREADS    # std::thread UDP listener
 	help
-	  Sprint 1 of the EGT camera GUI for the SAMA7D65 Curiosity board.
+	  Sprint 2 of the EGT camera GUI for the SAMA7D65 Curiosity board.
 
-	  Draws a "Hello" label and one touch button on the LVDS panel; the
-	  button updates an on-screen press counter. No video, no network yet
-	  (those arrive in Sprint 2 and Sprint 3).
+	  Sprint 1 UI (hello label + button) plus a PIR / motion-sensor
+	  notifier: a background thread listens on UDP port 5001, and any
+	  datagram received there shows "Sensor Detected" in the GUI for a few
+	  seconds. No video yet (that is Sprint 3).
 
 	  Installs the application as /usr/bin/AESDLinuxEgtProject.
 
-comment "camera-gui needs a toolchain w/ C++, gcc >= 9, wchar"
+comment "camera-gui needs a toolchain w/ C++, threads, gcc >= 9, wchar"
 	depends on !BR2_INSTALL_LIBSTDCPP || \
 		!BR2_TOOLCHAIN_GCC_AT_LEAST_9 || \
+		!BR2_TOOLCHAIN_HAS_THREADS || \
 		!BR2_USE_WCHAR

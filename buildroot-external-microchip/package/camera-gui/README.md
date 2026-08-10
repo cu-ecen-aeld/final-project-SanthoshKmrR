@@ -1,70 +1,69 @@
-# camera-gui — Sprint 1: Hello text + simple button UI
+# camera-gui — Sprint 2: PIR / motion sensor over UDP :5001
 
-The first milestone of the **camera-gui** project (`AESDLinuxEgtProject`): a
-self-contained Buildroot external package that cross-compiles an **EGT**
-(Ensemble Graphics Toolkit) application for the Microchip **SAMA7D65 Curiosity**
-board and draws a minimal UI on the LVDS panel.
+Second milestone of the **camera-gui** project (`AESDLinuxEgtProject`). Builds
+on Sprint 1 (EGT hello label + touch button) and adds a **PIR / motion-sensor
+notifier** received over the network.
 
-## What it does
+## What it does (new in Sprint 2)
 
-* Shows a **"Hello, camera-gui!"** text label.
-* Shows one touch **button**; each press updates an on-screen counter label.
-* Logs every stage to **stderr** (serial console).
+* A background thread listens on **UDP port 5001** (`INADDR_ANY`).
+* Any datagram received there is treated as a **motion / PIR detection**.
+* The GUI shows **"Sensor Detected"** (yellow) below the button for ~3 seconds
+  after each detection, then clears it.
+* Everything from Sprint 1 (hello label, button + press counter) is retained.
 
-That's the whole scope. There is **no** video, **no** network and **no**
-GStreamer yet — those are added in later sprints:
+Still **no** video and **no** GStreamer — that is Sprint 3, which also mirrors
+the logs into **syslog**. Logging here is stderr-only.
 
-| Sprint | Adds |
-|--------|------|
-| 1 (this) | EGT app: hello label + button |
-| 2 | UDP `:5001` PIR/motion sensor listener → "Sensor Detected" in the UI |
-| 3 | GStreamer RTP video overlay + JPEG capture + syslog logging |
+## Design note — why a thread + a pump timer
+
+EGT is **not** thread-safe. So the listener thread does the one thing that is
+safe off the UI thread: block in `recvfrom()` and flip a `std::atomic<bool>`
+flag. A UI-thread `PeriodicTimer` ("pump", ~30 Hz) polls that flag and performs
+all widget updates. No cross-thread EGT access → no locking. This is the exact
+pattern Sprint 3 reuses to drive the video pump.
+
+```
+   UDP :5001 datagram
+        |
+        v
+  [sensor thread]  --recvfrom()--> set atomic detected=true
+                                        |
+                                        v (polled every 33ms)
+                                   [UI pump timer] --> sensor.text("Sensor Detected")
+```
 
 ## Files
 
 ```
 camera-gui/
-├── Config.in              # BR2_PACKAGE_CAMERA_GUI (selects EGT)
-├── camera-gui.mk          # generic-package recipe (DEPENDENCIES = egt)
+├── Config.in              # selects EGT; requires toolchain threads
+├── camera-gui.mk          # generic-package (DEPENDENCIES = egt)
 ├── defconfig.fragment     # one line to enable the package
-├── camera-gui.service     # systemd unit (stops egtdemo, runs the start script)
-├── camera-gui-start.sh    # release the display from egtdemo, then launch
+├── camera-gui.service     # systemd unit (After=network.target)
+├── camera-gui-start.sh    # bring up eth0, stop egtdemo, launch
 └── src/
-    ├── main.cpp           # EGT hello + button
-    └── Makefile           # pkg-config libegt
+    ├── main.cpp           # Sprint 1 UI + UDP :5001 sensor thread + pump timer
+    └── Makefile           # pkg-config libegt, plus -pthread
 ```
 
-## Build (inside a Buildroot BR2_EXTERNAL tree)
+## Build
 
-1. Drop this `camera-gui/` directory into your external tree under
-   `package/camera-gui/`.
-2. Reference it from the external `Config.in`:
-   ```
-   source "$BR2_EXTERNAL_MCHP_PATH/package/camera-gui/Config.in"
-   ```
-3. Enable it in your board defconfig (see `defconfig.fragment`):
-   ```
-   BR2_PACKAGE_CAMERA_GUI=y
-   ```
-4. Build:
-   ```
-   make            # or: make camera-gui-rebuild
-   ```
-   The binary installs to `/usr/bin/AESDLinuxEgtProject`.
+Same as Sprint 1 — drop into `package/camera-gui/`, source the `Config.in`,
+set `BR2_PACKAGE_CAMERA_GUI=y`, and `make`. The binary installs to
+`/usr/bin/AESDLinuxEgtProject`.
 
-## Run on the target
+## Test the sensor
 
-The systemd service starts automatically at boot. To run by hand:
+From any host on the `192.168.10.0/24` network (the board is `192.168.10.22`):
 
 ```
-systemctl stop camera-gui        # if the service grabbed the display
-/usr/bin/camera-gui-start.sh      # stops egtdemo, then launches the app
+echo motion | nc -u -w1 192.168.10.22 5001
 ```
 
-## Standalone host build (optional)
-
-With `libegt` available to `pkg-config`:
+The GUI should show **"Sensor Detected"** for a few seconds. On the target,
+watch the log with:
 
 ```
-cd src && make
+/usr/bin/camera-gui-start.sh        # or: journalctl -u camera-gui -f
 ```
