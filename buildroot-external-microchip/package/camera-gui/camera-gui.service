@@ -1,0 +1,14 @@
+[Unit]
+Description=Camera GUI (EGT) Application -- Sprint 1
+# Start after egtdemo has settled, so the starter script can reliably detect
+# and stop egtdemo before taking over the display.
+After=egtdemo.service
+ConditionPathExists=/dev/dri/card0
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/camera-gui-start.sh
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target

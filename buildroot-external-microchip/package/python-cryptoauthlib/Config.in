@@ -1,0 +1,7 @@
+config BR2_PACKAGE_PYTHON_CRYPTOAUTHLIB
+	bool "python-cryptoauthlib"
+	depends on BR2_PACKAGE_PYTHON3
+	help
+	  Python Cryptoauthlib library.
+
+	  https://github.com/MicrochipTech/cryptoauthlib

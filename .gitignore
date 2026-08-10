@@ -1,0 +1,10 @@
+buildroot-mchp/output/
+buildroot-mchp/output*/
+buildroot-mchp/dl/
+buildroot-mchp/.config
+buildroot-mchp/.config.old
+buildroot-mchp/..config.tmp
+buildroot-mchp/.config.cmd
+*.swp
+*~
+.DS_Store

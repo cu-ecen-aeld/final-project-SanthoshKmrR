@@ -1,0 +1,10 @@
+# camera-gui (Sprint 1) — defconfig fragment
+#
+# Append this line to your board defconfig to build and install the Sprint 1
+# camera-gui application (/usr/bin/AESDLinuxEgtProject) into the target image.
+#
+# Via Config.in this selects EGT. No GStreamer options are needed in Sprint 1.
+#
+# (Ensure your toolchain provides C++ / gcc >= 9 / wchar, which EGT requires.)
+
+BR2_PACKAGE_CAMERA_GUI=y
