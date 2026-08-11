@@ -1,21 +1,35 @@
 #!/bin/sh
 #
 # camera-gui-start.sh -- startup wrapper for the camera-gui application.
-# (Sprint 2: bring the network up so UDP :5001 sensor datagrams can arrive,
-#  then take over the display and run. Still no GStreamer.)
+#
+# Called by camera-gui.service after boot. The EGT launcher demo (egtdemo)
+# owns the DRI display planes / LVDS panel; if it is running we must stop it
+# first so camera-gui can take over the display, then launch the application.
 #
 set -u
 
 APP=/usr/bin/AESDLinuxEgtProject
 EGTDEMO=egtdemo.service
 
+# Recommended runtime defaults (overridable via the service Environment= or an
+# environment file). H.264/RTP receive mode, larger jitter buffer for lossy
+# links, and a quiet GStreamer/libav log.
+export CAMERA_GUI_H264="${CAMERA_GUI_H264:-1}"
+export CAMERA_GUI_LATENCY="${CAMERA_GUI_LATENCY:-250}"
+export GST_DEBUG="${GST_DEBUG:-1}"
+
 # Bring up the wired interface with the board's static IP so it can receive the
-# UDP sensor datagrams on port 5001.
+# RTP/UDP video stream from the sender.
 echo "camera-gui: configuring eth0 (192.168.10.22/255.0.0.0)"
 ifconfig eth0 192.168.10.22 netmask 255.0.0.0 up
 
-# If egtdemo is active it is holding the display (DRM master + LCDC planes);
-# stop it AND wait for the display to be fully released before we launch.
+# If egtdemo is active it is holding the display (DRM master + LCDC overlay/HEO
+# planes); stop it AND wait for the display to be fully released before we
+# launch. `systemctl stop` returns when the process exits, but the kernel drops
+# the DRM master and tears down the LCDC planes slightly later -- if our EGT app
+# opens the display in that gap it cannot become master / grab the HEO overlay
+# and the video plane stays black (no visible feed). So we poll until the unit
+# is inactive, then give the display a short settle.
 if systemctl is-active --quiet "$EGTDEMO"; then
     echo "camera-gui: $EGTDEMO is active -- stopping it before launch"
     systemctl stop "$EGTDEMO"
@@ -31,5 +45,5 @@ else
     echo "camera-gui: $EGTDEMO not active -- nothing to stop"
 fi
 
-echo "camera-gui: launching $APP (listening for sensor on UDP :5001)"
+echo "camera-gui: launching $APP (H264=$CAMERA_GUI_H264 LATENCY=$CAMERA_GUI_LATENCY)"
 exec "$APP"

@@ -1,0 +1,13 @@
+# /etc/default/camera-gui -- runtime configuration for camera-gui.service
+#
+# This file is sourced by the systemd unit (EnvironmentFile) and by
+# check_screen_type.sh. Edit it and restart the service to apply -- no rebuild:
+#     systemctl restart camera-gui
+
+# Display-type check / auto-rotate at startup (check_screen_type.sh).
+#   1 = run the check   (LVDS -> nothing, MIPI/DSI -> try 90deg rotation)
+#   0 = skip it entirely
+SCREEN_CHECK=1
+
+# Rotation (degrees) attempted when a MIPI/DSI panel is detected.
+SCREEN_ROTATE=90

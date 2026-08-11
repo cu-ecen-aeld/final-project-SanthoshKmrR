@@ -1,12 +1,19 @@
 [Unit]
-Description=Camera GUI (EGT + UDP sensor) Application -- Sprint 2
+Description=Camera GUI (EGT + GStreamer) Application
 # Start after the network is up and after egtdemo has settled, so the starter
-# script can bring up eth0 (for UDP :5001) and stop egtdemo before launch.
+# script can reliably detect and stop egtdemo before taking over the display.
 After=network.target egtdemo.service
 ConditionPathExists=/dev/dri/card0
 
 [Service]
 Type=simple
+# Runtime configuration (SCREEN_CHECK, SCREEN_ROTATE, CAMERA_GUI_* ...).
+# The '-' makes it optional so a missing file is not an error.
+EnvironmentFile=-/etc/default/camera-gui
+# Separate, optional display-type check / auto-rotate step. The leading '-'
+# marks it non-fatal: if it fails (or is disabled via SCREEN_CHECK=0) the app
+# still starts. Disable at runtime with SCREEN_CHECK=0 in /etc/default/camera-gui.
+ExecStartPre=-/usr/bin/check_screen_type.sh
 ExecStart=/usr/bin/camera-gui-start.sh
 Restart=on-failure
 

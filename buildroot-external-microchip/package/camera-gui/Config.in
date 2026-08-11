@@ -1,22 +1,28 @@
 config BR2_PACKAGE_CAMERA_GUI
-	bool "camera-gui (AESDLinuxEgtProject) -- Sprint 2: + UDP :5001 sensor"
+	bool "camera-gui (AESDLinuxEgtProject)"
 	select BR2_PACKAGE_EGT
+	# EGT (with media support) already pulls in gstreamer1,
+	# gst1-plugins-base (app, videoconvertscale), gst1-plugins-good and
+	# gst1-libav (avdec_h264). The receive/capture pipeline additionally
+	# needs these gst1-plugins-good elements, which EGT does not guarantee:
+	select BR2_PACKAGE_GST1_PLUGINS_GOOD
+	select BR2_PACKAGE_GST1_PLUGINS_GOOD_PLUGIN_UDP
+	select BR2_PACKAGE_GST1_PLUGINS_GOOD_PLUGIN_RTP
+	select BR2_PACKAGE_GST1_PLUGINS_GOOD_PLUGIN_RTPMANAGER
+	select BR2_PACKAGE_GST1_PLUGINS_GOOD_PLUGIN_MULTIFILE
 	depends on BR2_INSTALL_LIBSTDCPP
 	depends on BR2_USE_WCHAR
 	depends on BR2_TOOLCHAIN_GCC_AT_LEAST_9 # egt: c++17
-	depends on BR2_TOOLCHAIN_HAS_THREADS    # std::thread UDP listener
 	help
-	  Sprint 2 of the EGT camera GUI for the SAMA7D65 Curiosity board.
+	  EGT + GStreamer camera GUI for the SAMA7D65 Curiosity board.
 
-	  Sprint 1 UI (hello label + button) plus a PIR / motion-sensor
-	  notifier: a background thread listens on UDP port 5001, and any
-	  datagram received there shows "Sensor Detected" in the GUI for a few
-	  seconds. No video yet (that is Sprint 3).
+	  Receives an H.264/RTP video stream over UDP (port 5000), decodes it
+	  with avdec_h264, and blits it onto a hardware overlay (HEO) plane on
+	  the LVDS panel. A touch button captures a still JPEG to the SD card.
 
 	  Installs the application as /usr/bin/AESDLinuxEgtProject.
 
-comment "camera-gui needs a toolchain w/ C++, threads, gcc >= 9, wchar"
+comment "camera-gui needs a toolchain w/ C++, gcc >= 9, wchar"
 	depends on !BR2_INSTALL_LIBSTDCPP || \
 		!BR2_TOOLCHAIN_GCC_AT_LEAST_9 || \
-		!BR2_TOOLCHAIN_HAS_THREADS || \
 		!BR2_USE_WCHAR
